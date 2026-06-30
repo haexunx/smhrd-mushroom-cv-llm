@@ -226,6 +226,17 @@ with col2:
         # 품종 및 데이터셋 요약
         st.info("**🍄 분석 대상 품종:** 느타리버섯 (Oyster Mushroom)")
         
+        # 1) 느타리버섯 최적 생육 환경 기준표 (표준 규격 UI 추가)
+        with st.expander("📖 느타리버섯 생육 환경 기준표 (표준 규격)"):
+            st.markdown(
+                "| 생육 단계 | 적정 온도 | 적정 습도 | 적정 CO2 농도 | 주요 특징 및 관리 요령 |\n"
+                "| :--- | :--- | :--- | :--- | :--- |\n"
+                "| **발이기 (Pinning)** | 18 ~ 20 °C | 90 ~ 95 % | 1,000 ppm 이하 | 발이 촉진을 위한 높은 습도 유지 |\n"
+                "| **생육기 (Growing)** | 13 ~ 18 °C | 85 ~ 90 % | 1,200 ppm 이하 | 버섯 성장을 위한 활발한 환기 및 온/습도 유지 |\n"
+                "| **수확기 (Harvest)** | 13 ~ 16 °C | 80 ~ 85 % | 1,000 ppm 이하 | 품질 유지 및 저장성 향상을 위해 습도 하강 |\n"
+                "| **병해 발생 시** | 15 °C 내외 | **80% 이하** | 적극적 환기 권장 | 고온 다습 시 푸른곰팡이, 갈색무늬병 급증 |\n"
+            )
+        
         # 진단 결과 시각화
         is_normal = meta.get("DBYHS_NORMALITY_ALTERNATIVE", True)
         disease_name = meta.get("DBYHS_SPCHCKN", "정상")
@@ -250,41 +261,68 @@ with col2:
             else:
                 with st.spinner("스마트팜 환경 제어 솔루션 분석 중..."):
                     try:
+                        # 2) mushroom_guide.md 파일 동적 로드 및 컨텍스트 주입
+                        guide_context = ""
+                        guide_file = "mushroom_guide.md"
+                        if os.path.exists(guide_file):
+                            try:
+                                with open(guide_file, "r", encoding="utf-8") as f:
+                                    guide_context = f.read().strip()
+                            except Exception as e:
+                                st.warning(f"도감 파일({guide_file}) 로드 중 에러: {e}")
+                        
+                        # 가이드 파일이 비어있는 경우 기본 내장 규칙 제공 (Fallback)
+                        if not guide_context:
+                            guide_context = (
+                                "- 느타리버섯 생육 관리 기준:\n"
+                                "  * 생육기 적정 온도: 13~18°C (야간 최저 10°C 이상)\n"
+                                "  * 생육기 적정 습도: 85~90% (병해 위험 시 80% 내외로 환기 유도)\n"
+                                "  * 이산화탄소 농도: 1,000 ppm 이하 관리 권장\n"
+                                "- 병해충 방제 관리:\n"
+                                "  * 세균갈색무늬병: 고온다습하거나 환기 불량 시 과습으로 대량 발생. 조치: 살수 중단, 습도 80% 이하 조절 및 적극적 환기.\n"
+                                "  * 푸른곰팡이병: 산성 토양 및 불청결 환경 시 다습 상태에서 다량 번식. 조치: 곰팡이 배지 조기 제거, 환기 강화, 온습도 조절."
+                            )
+                        
+                        # 3) LLM 설정
                         llm = ChatOpenAI(
                             model="gpt-4o-mini",
                             temperature=0.4,
                             openai_api_key=openai_api_key
                         )
                         
+                        # 4) 프롬프트 템플릿 구성
                         prompt_template = ChatPromptTemplate.from_messages([
                             ("system", (
                                 "당신은 버섯 스마트팜 재배 환경 및 병해충 방제 전문가입니다. "
-                                "제공받은 센서 데이터(온도, 습도, 이산화탄소 등)와 진단 메타데이터를 정밀 대조하여 실질적이고 과학적인 해결책을 처방하세요."
+                                "제공받은 센서 데이터(온도, 습도, 이산화탄소 등), 진단 메타데이터 및 아래 공식 도감 재배 가이드라인을 바탕으로 "
+                                "정밀 대조하여 농가에 가장 과학적인 처방을 조언하세요.\n\n"
+                                "공식 도감 가이드라인:\n{guide_context}"
                             )),
                             ("user", (
                                 "버섯 스마트팜 실시간 측정 메타데이터는 다음과 같습니다:\n"
                                 "```json\n{metadata_json}\n```\n\n"
                                 "이 데이터를 분석하여 아래 질문에 전문적으로 답해주세요:\n\n"
-                                "1. **센서 데이터 환경 진단**: 현재 온도({temp}°C), 습도({humidity}%), 이산화탄소({co2}ppm) 수치가 해당 품종({category_name})의 정상 생육 생태 환경(예: 양송이, 느타리 등의 표준 최적 환경 규격)에 적합한지 비교 분석해주세요.\n"
-                                "2. **병해충({disease}) 원인 분석**: 현재 진단된 '{disease}'의 발생 원인을 현재의 온습도/이산화탄소 수치와 연관 지어 설명하고, 이것이 환경 제어 미흡에 따른 것인지 규명해주세요.\n"
+                                "1. **센서 데이터 환경 진단**: 현재 온도({temp}°C), 습도({humidity}%), 이산화탄소({co2}ppm) 수치가 제공한 도감 가이드라인 규격에 적합한지 비교 분석해주세요.\n"
+                                "2. **병해충({disease}) 원인 분석**: 현재 진단된 '{disease}'의 발생 원인을 현재의 온습도/이산화탄소 수치 및 도감 내용과 연관 지어 설명하고, 이것이 환경 제어 미흡에 따른 것인지 규명해주세요.\n"
                                 "3. **스마트팜 제어 조치 처방**: 현재의 이병 상태를 해결하거나 추가 확산을 막기 위해 센서 수치(습도 낮추기, 환기 가동 등)를 어떻게 긴급 제어해야 하는지 명확한 가이드를 픽스해 조언해주세요."
                             ))
                         ])
                         
                         chain = prompt_template | llm | StrOutputParser()
                         
-                        feedback = chain.invoke({
+                        st.markdown("---")
+                        st.markdown("### 📋 AI 종합 처방 리포트")
+                        
+                        # st.write_stream을 이용해 타이핑하듯 실시간으로 답변 스트리밍 출력
+                        st.write_stream(chain.stream({
                             "metadata_json": json.dumps(cv_data, indent=2, ensure_ascii=False),
                             "temp": meta.get("TEMPERATURE"),
                             "humidity": meta.get("HUMIDITY"),
                             "co2": meta.get("CARBON_DIOXIDE"),
                             "category_name": "느타리버섯",
-                            "disease": disease_name
-                        })
-                        
-                        st.markdown("---")
-                        st.markdown("### 📋 AI 종합 처방 리포트")
-                        st.markdown(feedback)
+                            "disease": disease_name,
+                            "guide_context": guide_context
+                        }))
                         
                     except Exception as e:
                         st.error(f"AI 가이드를 생성하는 중 에러가 발생했습니다: {e}")
