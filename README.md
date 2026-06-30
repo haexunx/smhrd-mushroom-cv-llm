@@ -44,34 +44,31 @@ smhrd-mushroom-cv-llm/
 
 ---
 
-## ⚙️ 데이터 규격 (AI Hub 표준 메타데이터 포맷)
+## ⚙️ 데이터 규격 (실시간 전송 메타데이터 포맷)
 
-본 프로젝트는 AI Hub 버섯 스마트팜 데이터 표준 스키마를 기준으로 데이터를 입출력합니다:
+본 프로젝트는 불필요한 하드코딩 데이터를 제외하고, 이미지 분석과 조절 센서값 기반의 동적 데이터만 정제하여 LLM으로 전송합니다:
 
 ```json
 {
-  "INFO": {
-    "DATASET_NAME": "양송이 병해",
-    "CATEGORY_NAME": "양송이"
-  },
   "IMAGE": {
-    "IMAGE_FILE_NAME": "양송이_생육실1_8_16344202.jpg",
+    "IMAGE_FILE_NAME": "KakaoTalk_20260630_142516605_03.jpg",
     "ANNOTATION_COUNT": 1
   },
   "ANNOTATION_INFO": [
     {
-      "BOUNDING_BOX_X_COORDINATE": 204,
-      "BOUNDING_BOX_Y_COORDINATE": 1261,
-      "BOUNDING_BOX_WIDTH": 295,
-      "BOUNDING_BOX_HEIGHT": 342
+      "ID": 1,
+      "BOUNDING_BOX_X_COORDINATE": 521,
+      "BOUNDING_BOX_Y_COORDINATE": 1008,
+      "BOUNDING_BOX_WIDTH": 367,
+      "BOUNDING_BOX_HEIGHT": 352
     }
   ],
   "META": {
     "DBYHS_SPCHCKN": "푸른곰팡이병",
     "DBYHS_NORMALITY_ALTERNATIVE": false,
-    "TEMPERATURE": 18.2,
-    "HUMIDITY": 97.6,
-    "CARBON_DIOXIDE": 1156.0
+    "TEMPERATURE": 15.0,
+    "HUMIDITY": 90.0,
+    "CARBON_DIOXIDE": 1000.0
   }
 }
 ```
