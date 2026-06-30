@@ -1,18 +1,20 @@
-# 🍄 느타리버섯 생육 상태 및 병해충 진단 AI 피드백 시스템
+# 🍄 스마트팜 버섯 병해 및 생육 상태 AI 진단 서비스
 
-느타리버섯 이미지를 업로드하면 컴퓨터 비전(YOLO) 모델을 통해 **생육 상태(성장 단계)**와 **병해충 발생 여부**를 탐지하고, 이 메타데이터를 기반으로 LangChain을 거쳐 OpenAI `gpt-4o-mini` 모델로부터 전문적인 재배 가이드 및 피드백을 제공받는 웹 애플리케이션입니다.
+버섯 이미지 분석에서 추출된 **AI Hub 표준 메타데이터**(센서 및 환경 정보)를 바탕으로, 컴퓨터 비전(YOLO) 진단 결과와 연동하여 OpenAI `gpt-4o-mini` 모델로부터 실시간 정밀 스마트팜 제어 처방 및 컨설팅 피드백을 제공받는 웹 애플리케이션입니다.
 
 ---
 
 ## 🌟 주요 기능 (Key Features)
 
-1. **느타리버섯 이미지 업로드 및 객체 탐지 (Object Detection)**
-   - 업로드된 느타리버섯 이미지 내에서 자실체의 위치를 인식하고 바운딩 박스로 시각화합니다.
-2. **생육 단계 및 병해충 진단 메타데이터 추출**
-   - YOLO 모델의 탐지 결과를 분석하여 **성장 단계**(예: 발이기, 생육기, 수확기 등) 및 **병해충 상태**(예: 정상, 푸른곰팡이병, 세균성갈색무늬병 등) 메타데이터를 추출합니다.
-3. **LangChain & LLM 피드백 루프**
-   - 탐지된 메타데이터를 프롬프트와 함께 OpenAI `gpt-4o-mini` 모델에 전달합니다.
-   - 현재 생육 상태에 따른 재배 환경 제어법(온도, 습도, 환기 등) 및 감지된 병해충에 대한 대처법 등 맞춤형 컨설팅 피드백을 실시간으로 제공받습니다.
+1. **버섯 생육/병해 이미지 및 표준 메타데이터(JSON) 로드**
+   - 이미지와 함께 AI Hub(스마트팜 통합데이터_버섯) 규격에 맞춘 JSON 형식의 분석 데이터를 입력받습니다.
+2. **센서 및 환경 정보 시각화 (Dashboard)**
+   - 메타데이터 내 실시간 측정값인 **온도(TEMPERATURE)**, **습도(HUMIDITY)**, **이산화탄소 농도(CARBON_DIOXIDE)** 수치를 Streamlit 대시보드 메트릭스로 출력합니다.
+   - 객체 탐지 및 병해 발생 여부(`DBYHS_NORMALITY_ALTERNATIVE`, `DBYHS_SPCHCKN`)를 실시간으로 스캔합니다.
+3. **LangChain & LLM 정밀 컨설팅 루프**
+   - 센서 측정값 및 병해 분류 정보를 프롬프트로 가공하여 OpenAI `gpt-4o-mini` 모델로 전송합니다.
+   - 현재 온도/습도/이산화탄소 조건이 버섯 품종에 적합한지 정밀 비교 분석합니다.
+   - 병해 발생의 환경적 원인을 분석하고, 온도 하강/환기 작동 등 스마트팜 구동 제어 솔루션을 긴급 처방합니다.
 
 ---
 
@@ -32,12 +34,46 @@
 ```text
 smhrd-mushroom-cv-llm/
 ├── models/
-│   └── best.pt               # 느타리버섯 생육/병해충 탐지용 YOLO 학습 가중치 파일
+│   └── best.pt               # 버섯 생육/병해충 탐지용 YOLO 학습 가중치 파일
 ├── .env.example              # 환경 변수 템플릿 파일
 ├── .gitignore                # Git 제외 대상 설정 파일
-├── mushroom_guide.md         # 느타리버섯 재배 매뉴얼 및 관리법 DB (Optional)
+├── mushroom_guide.md         # 버섯 품종별 최적 생육 환경 가이드라인 DB (Optional)
 ├── requirements.txt          # 패키지 의존성 정의 파일
-└── streamlit.app.py          # Streamlit 실행 메인 파일
+└── streamlit.app.py          # Streamlit 대시보드 및 LLM 연동 메인 코드
+```
+
+---
+
+## ⚙️ 데이터 규격 (AI Hub 표준 메타데이터 포맷)
+
+본 프로젝트는 AI Hub 버섯 스마트팜 데이터 표준 스키마를 기준으로 데이터를 입출력합니다:
+
+```json
+{
+  "INFO": {
+    "DATASET_NAME": "양송이 병해",
+    "CATEGORY_NAME": "양송이"
+  },
+  "IMAGE": {
+    "IMAGE_FILE_NAME": "양송이_생육실1_8_16344202.jpg",
+    "ANNOTATION_COUNT": 1
+  },
+  "ANNOTATION_INFO": [
+    {
+      "BOUNDING_BOX_X_COORDINATE": 204,
+      "BOUNDING_BOX_Y_COORDINATE": 1261,
+      "BOUNDING_BOX_WIDTH": 295,
+      "BOUNDING_BOX_HEIGHT": 342
+    }
+  ],
+  "META": {
+    "DBYHS_SPCHCKN": "푸른곰팡이병",
+    "DBYHS_NORMALITY_ALTERNATIVE": false,
+    "TEMPERATURE": 18.2,
+    "HUMIDITY": 97.6,
+    "CARBON_DIOXIDE": 1156.0
+  }
+}
 ```
 
 ---
@@ -72,6 +108,8 @@ OPENAI_API_KEY=sk-proj-YourActualOpenAIKeyHere
 ```
 
 ### 3. 애플리케이션 실행
+설정이 완료되면 아래 명령어로 Streamlit 웹 애플리케이션을 구동할 수 있습니다.
+
 ```bash
 streamlit run streamlit.app.py
 ```
@@ -82,10 +120,8 @@ streamlit run streamlit.app.py
 
 ```mermaid
 graph TD
-    A[느타리버섯 이미지 업로드] --> B[YOLO Model 분석]
-    B --> C[이미지 내 생육 부위 및 병해충 부위 시각화]
-    B --> D[메타데이터 추출: 성장단계, 병해충 종류/심각도]
-    D --> E[LangChain Prompt Template 결합]
-    E --> F[OpenAI gpt-4o-mini 호출]
-    F --> G[생육 진단 결과 및 맞춤형 재배 관리 피드백 화면 출력]
+    A[이미지 업로드 & JSON 메타데이터 입력] --> B[대시보드 렌더링: 온습도/CO2/병해 정보]
+    B --> C[LangChain Prompt Template 결합]
+    C --> D[OpenAI gpt-4o-mini 호출]
+    D --> E[생육 적합도 분석 및 스마트팜 제어 솔루션 처방 레포트 출력]
 ```
