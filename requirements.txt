@@ -1,0 +1,7 @@
+streamlit
+ultralytics
+langchain
+langchain-openai
+python-dotenv
+pillow
+opencv-python-headless
