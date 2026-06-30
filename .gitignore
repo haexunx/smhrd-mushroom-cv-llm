@@ -1,0 +1,32 @@
+# === Security & Environment Variables ===
+# API 키, 비밀번호 등 중요 정보가 담긴 환경변수 파일 (필수)
+.env
+.env.local
+# .env.*
+
+# === Large Model Files (Machine Learning) ===
+# 가중치 파일(.pt, .pth)은 용량이 커서 GitHub 업로드에 적합하지 않습니다.
+*.pt
+*.pth
+*.onnx
+models/
+
+# === Python Environment ===
+# 파이썬 실행 시 생성되는 캐시 파일
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경 (venv, conda 등) 폴더가 프로젝트 내에 생성될 경우를 대비
+.venv/
+venv/
+env/
+ENV/
+
+# === OS & IDE Files ===
+# macOS 시스템 파일
+.DS_Store
+# Windows 시스템 파일
+Thumbs.db
+# VS Code 설정 파일
+.vscode/
